@@ -9,7 +9,7 @@ const length = (a) => {
     return Math.sqrt(dot(a, a));
 }
 
-const MAX = 1000000000
+const MAX = Number.MAX_VALUE
 export default function Canvas() {
     const ref= useRef(null);
     
