@@ -5,6 +5,11 @@ const dot = (a, b) => {
         return res + cur * b[index];
     }, 0)
 }
+const length = (a) => {
+    return Math.sqrt(dot(a, a));
+}
+
+const MAX = 1000000000
 export default function Canvas() {
     const ref= useRef(null);
     
@@ -35,7 +40,56 @@ export default function Canvas() {
         radius: 1,
         color: [0, 255, 0]
     };
-    const spheres = [sphere0, sphere1, sphere2];
+    const sphere3 = {
+        center: [0, -5001, 0],
+        radius: 5000,
+        color: [255, 255, 0]
+    };
+    const spheres = [sphere0, sphere1, sphere2, sphere3];
+
+    const light0 = {
+        type: 'ambient',
+        intensity: 0.2,
+    }
+    const light1 = {
+        type: 'point',
+        intensity: 0.6,
+        position: [2, 1, 0]
+    }
+    const light2 = {
+        type: 'directional',
+        intensity: 0.2,
+        direction: [1, 4, 4]
+    }
+    const lights = [light0, light1, light2];
+
+    const ComputeLighting = (P, N) => {
+        let i = 0;
+        for (const light of lights) {
+            switch (light.type) {
+                case 'ambient': {
+                    i += light.intensity;
+                    break
+                }
+                case 'point':
+                case  'directional': {
+                    let L = [0, 0, 0];
+                    if (light.type === 'point') {
+                        L = [light.position[0] - P[0], light.position[1] - P[1], light.position[2] - P[2]];
+                    } else {
+                        
+                        L = [light.direction[0], light.direction[1], light.direction[2]];
+                    }
+                    const n_dot_l = dot(L, N);
+                    if (n_dot_l > 0) {
+                        i += light.intensity * n_dot_l / (length(L) * length(N));
+                    }
+                }
+            }
+        }
+        return Math.min(i, 1);
+    }
+
     const CanvasToViewport = (x, y) => {
 
         return [x * VIEWPORT_WIDTH / CANVAS_WIDTH, y * VIEWPORT_HEIGHT / CANVAS_HEIGHT, VIEWPORT_DISTANCE];
@@ -59,7 +113,7 @@ export default function Canvas() {
     }
 
     const TraceRay = (O, D, min, max) => {
-        let closest_t = 10000
+        let closest_t = MAX
         let closest_sphere = null;
 
         for (const sphere of spheres) {
@@ -71,13 +125,18 @@ export default function Canvas() {
             if (t1 >= min && t1 <= max && t1 < closest_t) {
                 closest_t = t1
                 closest_sphere = sphere
-            } else if (t2 >= min && t2 <= max && t2 < closest_t) {
+            }
+            if (t2 >= min && t2 <= max && t2 < closest_t) {
                 closest_t = t2
                 closest_sphere = sphere
             }
         }
         if (!!closest_sphere) {
-            return closest_sphere.color;
+            const P = [closest_t * D[0] + O[0], closest_t * D[1] + O[1], closest_t * D[2] + O[2]];
+            const N = [P[0] - closest_sphere.center[0], P[1] - closest_sphere.center[1], P[2] - closest_sphere.center[2]];
+            const i = ComputeLighting(P, N);
+
+            return closest_sphere.color.map(v => v * i);
         } else {
             return BACKGROUND_COLOR;
         }
@@ -97,9 +156,8 @@ export default function Canvas() {
         const main = () => {
             for (let i = XArea[0]; i < XArea[1]; i++) {
                 for (let j = YArea[0]; j < YArea[1]; j++) {
-                    
                     const D = CanvasToViewport(i, j);
-                    const color = TraceRay(O, D, 1, 10000);
+                    const color = TraceRay(O, D, 1, MAX);
                     
                     PutPixel(i, j, color);
                 }
