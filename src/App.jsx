@@ -28,22 +28,26 @@ export default function Canvas() {
     const sphere0 = {
         center: [0, -1, 3],
         radius: 1,
-        color: [255, 0, 0]
+        color: [255, 0, 0],
+        specular: 500
     };
     const sphere1 = {
         center: [2, 0, 4],
         radius: 1,
-        color: [0, 0, 255]
+        color: [0, 0, 255],
+        specular: 500
     };
     const sphere2 = {
         center: [-2, 0, 4],
         radius: 1,
-        color: [0, 255, 0]
+        color: [0, 255, 0],
+        specular: 10
     };
     const sphere3 = {
         center: [0, -5001, 0],
         radius: 5000,
-        color: [255, 255, 0]
+        color: [255, 255, 0],
+        specular: 1000
     };
     const spheres = [sphere0, sphere1, sphere2, sphere3];
 
@@ -63,7 +67,7 @@ export default function Canvas() {
     }
     const lights = [light0, light1, light2];
 
-    const ComputeLighting = (P, N) => {
+    const ComputeLighting = (P, N, V, s) => {
         let i = 0;
         for (const light of lights) {
             switch (light.type) {
@@ -83,6 +87,14 @@ export default function Canvas() {
                     const n_dot_l = dot(L, N);
                     if (n_dot_l > 0) {
                         i += light.intensity * n_dot_l / (length(L) * length(N));
+                    }
+                    if (!!s && s > 0) {
+                        const n_dot_l = dot(N, L);
+                        const R = [2 * N[0] * n_dot_l - L[0], 2 * N[1] * n_dot_l - L[1], 2 * N[2] * n_dot_l - L[2]];
+                        const r_dot_v = dot(R, V);
+                        if (r_dot_v > 0) {
+                            i += light.intensity * Math.pow(r_dot_v / (length(R) * length(V)), s);
+                        }
                     }
                 }
             }
@@ -134,7 +146,7 @@ export default function Canvas() {
         if (!!closest_sphere) {
             const P = [closest_t * D[0] + O[0], closest_t * D[1] + O[1], closest_t * D[2] + O[2]];
             const N = [P[0] - closest_sphere.center[0], P[1] - closest_sphere.center[1], P[2] - closest_sphere.center[2]];
-            const i = ComputeLighting(P, N);
+            const i = ComputeLighting(P, N, [-D[0], -D[1], -D[2]], closest_sphere.specular || 0);
 
             return closest_sphere.color.map(v => v * i);
         } else {
@@ -154,8 +166,8 @@ export default function Canvas() {
     
     useEffect(() => {
         const main = () => {
-            for (let i = XArea[0]; i < XArea[1]; i++) {
-                for (let j = YArea[0]; j < YArea[1]; j++) {
+            for (let i = XArea[0]; i <= XArea[1]; i++) {
+                for (let j = YArea[0]; j <= YArea[1]; j++) {
                     const D = CanvasToViewport(i, j);
                     const color = TraceRay(O, D, 1, MAX);
                     
