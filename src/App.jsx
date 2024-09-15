@@ -13,7 +13,7 @@ const MAX = Number.MAX_VALUE
 export default function Canvas() {
     const ref= useRef(null);
     
-    const BACKGROUND_COLOR = [255, 255, 255]
+    const BACKGROUND_COLOR = [0, 0, 0]
     const CANVAS_HEIGHT = 500;
     const CANVAS_WIDTH = 500;
 
@@ -84,6 +84,13 @@ export default function Canvas() {
                         
                         L = [light.direction[0], light.direction[1], light.direction[2]];
                     }
+
+                    const [shadow_sphere,] = ClosestIntersection(P, L, 0.001, light.type === 'point' ? 1 : MAX);
+
+                    if (!!shadow_sphere) {
+                        continue;
+                    }
+
                     const n_dot_l = dot(L, N);
                     if (n_dot_l > 0) {
                         i += light.intensity * n_dot_l / (length(L) * length(N));
@@ -107,6 +114,29 @@ export default function Canvas() {
         return [x * VIEWPORT_WIDTH / CANVAS_WIDTH, y * VIEWPORT_HEIGHT / CANVAS_HEIGHT, VIEWPORT_DISTANCE];
     };
 
+    const ClosestIntersection = (O, D, t_min, t_max) => {
+        let closest_t = MAX
+        let closest_sphere = null;
+        for (const sphere of spheres) {
+            const array = IntersectRaySphere(O, D, sphere);
+            if (array.length === 0) {
+                continue;
+            }
+            const [t1, t2] = array
+            if (t1 >= t_min && t1 <= t_max && t1 < closest_t) {
+                closest_t = t1
+                closest_sphere = sphere
+            }
+            
+            if (t2 >= t_min && t2 <= t_max && t2 < closest_t) {
+                closest_t = t2
+                closest_sphere = sphere
+            }
+        }
+
+        return [closest_sphere, closest_t]
+    }
+
     const IntersectRaySphere = (O, D, sphere) => {
         const r = sphere.radius
         const CO = [O[0] - sphere.center[0], O[1] - sphere.center[1], O[2] - sphere.center[2]];
@@ -125,24 +155,7 @@ export default function Canvas() {
     }
 
     const TraceRay = (O, D, min, max) => {
-        let closest_t = MAX
-        let closest_sphere = null;
-
-        for (const sphere of spheres) {
-            const array = IntersectRaySphere(O, D, sphere);
-            if (array.length === 0) {
-                continue;
-            }
-            const [t1, t2] = array
-            if (t1 >= min && t1 <= max && t1 < closest_t) {
-                closest_t = t1
-                closest_sphere = sphere
-            }
-            if (t2 >= min && t2 <= max && t2 < closest_t) {
-                closest_t = t2
-                closest_sphere = sphere
-            }
-        }
+        const [closest_sphere, closest_t] = ClosestIntersection(O, D, min, max);
         if (!!closest_sphere) {
             const P = [closest_t * D[0] + O[0], closest_t * D[1] + O[1], closest_t * D[2] + O[2]];
             const N = [P[0] - closest_sphere.center[0], P[1] - closest_sphere.center[1], P[2] - closest_sphere.center[2]];
