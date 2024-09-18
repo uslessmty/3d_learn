@@ -29,25 +29,29 @@ export default function Canvas() {
         center: [0, -1, 3],
         radius: 1,
         color: [255, 0, 0],
-        specular: 500
+        specular: 500,
+        reflective: 0.2
     };
     const sphere1 = {
         center: [2, 0, 4],
         radius: 1,
         color: [0, 0, 255],
-        specular: 500
+        specular: 500,
+        reflective: 0.3
     };
     const sphere2 = {
         center: [-2, 0, 4],
         radius: 1,
         color: [0, 255, 0],
-        specular: 10
+        specular: 10,
+        reflective: 0.4
     };
     const sphere3 = {
         center: [0, -5001, 0],
         radius: 5000,
         color: [255, 255, 0],
-        specular: 1000
+        specular: 1000,
+        reflective: 0.5
     };
     const spheres = [sphere0, sphere1, sphere2, sphere3];
 
@@ -67,6 +71,10 @@ export default function Canvas() {
     }
     const lights = [light0, light1, light2];
 
+    const ReflectRay = (R, N) => {
+        const n_dot_r = dot(N, R);
+        return [2 * n_dot_r * N[0] - R[0], 2 * n_dot_r * N[1] - R[1], 2 * n_dot_r * N[2] - R[2]];
+    }
     const ComputeLighting = (P, N, V, s) => {
         let i = 0;
         for (const light of lights) {
@@ -154,14 +162,24 @@ export default function Canvas() {
         return [t1, t2]
     }
 
-    const TraceRay = (O, D, min, max) => {
+    const TraceRay = (O, D, min, max, recursion_depth) => {
         const [closest_sphere, closest_t] = ClosestIntersection(O, D, min, max);
         if (!!closest_sphere) {
             const P = [closest_t * D[0] + O[0], closest_t * D[1] + O[1], closest_t * D[2] + O[2]];
-            const N = [P[0] - closest_sphere.center[0], P[1] - closest_sphere.center[1], P[2] - closest_sphere.center[2]];
+            let N = [P[0] - closest_sphere.center[0], P[1] - closest_sphere.center[1], P[2] - closest_sphere.center[2]];
+            const length_n = length(N);
+            N = [N[0] / length_n, N[1] / length_n, N[2] / length_n];
             const i = ComputeLighting(P, N, [-D[0], -D[1], -D[2]], closest_sphere.specular || 0);
-
-            return closest_sphere.color.map(v => v * i);
+            
+            const local_color = closest_sphere.color.map(v => v * i);
+            const r = closest_sphere.reflective;
+            if (recursion_depth <= 0 || r <= 0) {
+                return local_color
+            }
+            const R = ReflectRay(D.map(i => -i), N);
+            const reflected_color = TraceRay(P, R, 0.001, MAX, recursion_depth - 1);
+            const final_color = reflected_color.map((v, i) => v * r + local_color[i] * (1 - r));
+            return final_color;
         } else {
             return BACKGROUND_COLOR;
         }
@@ -182,7 +200,7 @@ export default function Canvas() {
             for (let i = XArea[0]; i <= XArea[1]; i++) {
                 for (let j = YArea[0]; j <= YArea[1]; j++) {
                     const D = CanvasToViewport(i, j);
-                    const color = TraceRay(O, D, 1, MAX);
+                    const color = TraceRay(O, D, 1, MAX, 1);
                     
                     PutPixel(i, j, color);
                 }
