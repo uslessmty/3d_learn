@@ -23,7 +23,6 @@ export default function Canvas() {
 
     const XArea = [-CANVAS_WIDTH / 2, CANVAS_WIDTH / 2];
     const YArea = [-CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 2];
-    const O = [0, 0, 0,];
 
     const sphere0 = {
         center: [0, -1, 3],
@@ -53,6 +52,14 @@ export default function Canvas() {
         specular: 1000,
         reflective: 0.5
     };
+    const camera = {
+        rotation: [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+        ],
+        position: [0, 1, 0],  
+    };
     const spheres = [sphere0, sphere1, sphere2, sphere3];
 
     const light0 = {
@@ -71,6 +78,14 @@ export default function Canvas() {
     }
     const lights = [light0, light1, light2];
 
+    const MaxtrixMultiVector = (M, V) => {
+        return V.map((v, index) => {
+            return M[index].reduce((res, cur,) => {
+                return res + cur * v;
+            }, 0)
+        })
+    }
+    
     const ReflectRay = (R, N) => {
         const n_dot_r = dot(N, R);
         return [2 * n_dot_r * N[0] - R[0], 2 * n_dot_r * N[1] - R[1], 2 * n_dot_r * N[2] - R[2]];
@@ -199,8 +214,9 @@ export default function Canvas() {
         const main = () => {
             for (let i = XArea[0]; i <= XArea[1]; i++) {
                 for (let j = YArea[0]; j <= YArea[1]; j++) {
-                    const D = CanvasToViewport(i, j);
-                    const color = TraceRay(O, D, 1, MAX, 1);
+                    const D = MaxtrixMultiVector(camera.rotation, CanvasToViewport(i, j));
+                    
+                    const color = TraceRay(camera.position, D, 1, MAX, 1);
                     
                     PutPixel(i, j, color);
                 }
