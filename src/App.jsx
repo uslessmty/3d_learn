@@ -200,6 +200,34 @@ export default function Canvas() {
         }
     }
 
+    const DrawLine = (P0, P1, color) => {
+
+        const dx = P1[0] - P0[0];
+        const dy = P1[1] - P0[1];
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (P0[0] > P1[0]) {
+                [P0, P1] = [P1, P0];
+            }
+            let a = (P1[1] - P0[1]) / (P1[0] - P0[0]);
+            let y = P0[1];
+            for (let x = P0[0]; x <= P1[0]; x++) {
+                PutPixel(x, y, color);
+                y = y  + a;
+            }
+        } else {
+            if (P0[1] > P1[1]) {
+                [P0, P1] = [P1, P0];
+            }
+            let a = dx / dy;
+            let x = P0[0]; 
+            for (let y = P0[1]; y <= P1[1]; y++) {
+                PutPixel(x, y, color);
+                x = x  + a;
+            }
+        }
+    }
+
     const PutPixel = (x, y, color) => {
         y = -y;
         x = Math.round(x + CANVAS_WIDTH / 2);
@@ -212,16 +240,16 @@ export default function Canvas() {
     
     useEffect(() => {
         const main = () => {
-            for (let i = XArea[0]; i <= XArea[1]; i++) {
-                for (let j = YArea[0]; j <= YArea[1]; j++) {
-                    const D = MaxtrixMultiVector(camera.rotation, CanvasToViewport(i, j));
+            // for (let i = XArea[0]; i <= XArea[1]; i++) {
+            //     for (let j = YArea[0]; j <= YArea[1]; j++) {
+            //         const D = MaxtrixMultiVector(camera.rotation, CanvasToViewport(i, j));
                     
-                    const color = TraceRay(camera.position, D, 1, MAX, 1);
+            //         const color = TraceRay(camera.position, D, 1, MAX, 1);
                     
-                    PutPixel(i, j, color);
-                }
-            }
-            
+            //         PutPixel(i, j, color);
+            //     }
+            // }
+            DrawLine([-50, -200], [60, 240], [255, 0, 0])
         }
         main();
     }, []);
