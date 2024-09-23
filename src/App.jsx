@@ -209,23 +209,32 @@ export default function Canvas() {
             if (P0[0] > P1[0]) {
                 [P0, P1] = [P1, P0];
             }
-            let a = (P1[1] - P0[1]) / (P1[0] - P0[0]);
-            let y = P0[1];
+            let ys = Interpolate(P0[0], P0[1], P1[0], P1[1]);
             for (let x = P0[0]; x <= P1[0]; x++) {
-                PutPixel(x, y, color);
-                y = y  + a;
+                PutPixel(x, ys[x - P0[0]], color);
             }
         } else {
             if (P0[1] > P1[1]) {
                 [P0, P1] = [P1, P0];
             }
-            let a = dx / dy;
-            let x = P0[0]; 
+            let xs = Interpolate(P0[1], P0[0], P1[1], P1[0]);
             for (let y = P0[1]; y <= P1[1]; y++) {
-                PutPixel(x, y, color);
-                x = x  + a;
+                PutPixel(xs[y - P0[1]], y, color);
             }
         }
+    }
+    
+    const Interpolate = (i0, d0, i1, d1) => {
+        if (i0 == i1) reyurn [d0];
+        
+        const values = [];
+        const a = (d1 - d0) / (i1 - i0);
+        let d = d0;
+        for (let i = i0; i <= i1; i++) {
+            values.push(d);
+            d = d + a;
+        }
+        return values;
     }
 
     const PutPixel = (x, y, color) => {
